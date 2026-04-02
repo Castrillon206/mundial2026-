@@ -417,16 +417,27 @@ function triggerAutoSave(){
 }
 
 async function saveData(auto=false){
-  if(!currentUser)return;
+  // Esperar a que Firebase Auth esté listo
+  if(!currentUser){
+    const user = await new Promise(resolve=>{
+      const unsub = auth.onAuthStateChanged(u=>{ unsub(); resolve(u); });
+    });
+    if(!user){ console.log('No user'); return; }
+    currentUser = user;
+  }
   const btn=document.getElementById("btnSave");
   if(!auto){btn.disabled=true;btn.textContent="⏳ Guardando...";}
   else{document.getElementById("syncStatus").textContent="⏳ Autoguardando...";}
   try{
-    await userDoc().set({scores,koTeams,scorerGoals,extraScorers,updatedAt:new Date().toISOString()});
+    const token = await currentUser.getIdToken(true);
+    await db.collection('fixtures').doc(currentUser.uid).set(
+      {scores,koTeams,scorerGoals,extraScorers,updatedAt:new Date().toISOString()}
+    );
     if(!auto){const ok=document.getElementById("saveOk");ok.style.opacity=1;setTimeout(()=>ok.style.opacity=0,2500);}
     document.getElementById("syncStatus").textContent="☁️ Guardado "+new Date().toLocaleTimeString();
   }catch(e){
-    document.getElementById("syncStatus").textContent="⚠️ Error al guardar";
+    document.getElementById("syncStatus").textContent="⚠️ Error: "+e.code;
+    console.error("Save error:", e.code, e.message);
     if(!auto)alert("Error al guardar: "+e.message);
   }
   if(!auto){btn.disabled=false;btn.textContent="☁️ Guardar en la nube";}
