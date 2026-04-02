@@ -373,9 +373,15 @@ let chartInstances={groups:null,teams:null,wins:null,avg:null};
 // ── AUTH ──
 function loginGoogle(){
   const p=new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(p).catch(e=>alert('Error: '+e.message));
+  p.setCustomParameters({prompt:'select_account'});
+  auth.signInWithRedirect(p).catch(e=>alert('Error: '+e.message));
 }
 function logout(){ auth.signOut(); }
+
+// Manejar resultado del redirect de Google
+auth.getRedirectResult().then(result=>{
+  if(result && result.user) console.log('Redirect login OK:', result.user.email);
+}).catch(e=>console.error('Redirect error:', e));
 
 auth.onAuthStateChanged(async user=>{
   document.getElementById('loadingScreen').style.display='none';
