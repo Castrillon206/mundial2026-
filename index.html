@@ -380,11 +380,19 @@ function logout(){ auth.signOut(); }
 
 // Manejar resultado del redirect de Google
 auth.getRedirectResult().then(result=>{
-  if(result && result.user) console.log('Redirect login OK:', result.user.email);
-}).catch(e=>console.error('Redirect error:', e));
+  if(result && result.user){
+    console.log('Redirect login OK:', result.user.email);
+  }
+}).catch(e=>{
+  console.error('Redirect error:', e.code, e.message);
+});
 
+let authInitialized = false;
 auth.onAuthStateChanged(async user=>{
-  document.getElementById('loadingScreen').style.display='none';
+  if(!authInitialized){
+    authInitialized = true;
+    document.getElementById('loadingScreen').style.display='none';
+  }
   if(user){
     currentUser=user;
     document.getElementById('loginScreen').style.display='none';
@@ -398,8 +406,12 @@ auth.onAuthStateChanged(async user=>{
     renderAll();
   } else {
     currentUser=null;
-    document.getElementById('loginScreen').style.display='flex';
-    document.getElementById('app').style.display='none';
+    // Solo mostrar login si ya terminó de inicializar (evita flash)
+    if(authInitialized){
+      document.getElementById('loginScreen').style.display='flex';
+      document.getElementById('app').style.display='none';
+      document.getElementById('loadingScreen').style.display='none';
+    }
   }
 });
 
