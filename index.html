@@ -10,7 +10,7 @@
 <script>
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyCUFgZlRm6HtqTA_xvatV9JbKxkTDYiV0I",
-  authDomain:        "mundial2026-bc9c5.firebaseapp.com",
+  authDomain:        "castrillon206.github.io",
   projectId:         "mundial2026-bc9c5",
   storageBucket:     "mundial2026-bc9c5.firebasestorage.app",
   messagingSenderId: "54248645871",
@@ -374,7 +374,17 @@ let chartInstances={groups:null,teams:null,wins:null,avg:null};
 function loginGoogle(){
   const p=new firebase.auth.GoogleAuthProvider();
   p.setCustomParameters({prompt:'select_account'});
-  auth.signInWithRedirect(p).catch(e=>alert('Error: '+e.message));
+  // Intentar popup primero, si falla usar redirect
+  auth.signInWithPopup(p)
+    .then(result=>console.log('Login OK:', result.user.email))
+    .catch(err=>{
+      if(err.code==='auth/popup-blocked'||err.code==='auth/popup-closed-by-user'){
+        auth.signInWithRedirect(p);
+      } else {
+        console.error('Auth error:', err.code, err.message);
+        alert('Error al iniciar sesión: '+err.message);
+      }
+    });
 }
 function logout(){ auth.signOut(); }
 
@@ -382,9 +392,12 @@ function logout(){ auth.signOut(); }
 auth.getRedirectResult().then(result=>{
   if(result && result.user){
     console.log('Redirect login OK:', result.user.email);
+    currentUser = result.user;
   }
 }).catch(e=>{
-  console.error('Redirect error:', e.code, e.message);
+  if(e.code !== 'auth/no-current-user'){
+    console.error('Redirect error:', e.code, e.message);
+  }
 });
 
 let authInitialized = false;
